@@ -1,0 +1,8 @@
+# Check that something happens
+# This won't evaluate in the test scripts
+> 'eval System.setProperty("flyway.placeholders.name", "James")'
+> flywayClean
+> flywayMigrate
+> 'eval System.setProperty("flyway.locations", "filesystem:src/main/resources/db/migration,filesystem:src/test/resources/db/migration")'
+> test:flywayClean
+> test:flywayMigrate
