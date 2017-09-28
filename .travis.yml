@@ -1,0 +1,7 @@
+language: scala
+
+jdk: oraclejdk8
+
+# Need to add publish details
+script:
+   - sbt scripted
