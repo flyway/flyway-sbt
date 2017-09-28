@@ -1,5 +1,5 @@
 
-# [![Build Status](https://travis-ci.org/davidmweber/flyway-sbt.png?branch=master)](https://travis-ci.org/davidmweber/flyway-sbt)
+# [![Build Status](https://travis-ci.org/flyway/flyway-sbt.svg?branch=master)](https://travis-ci.org/davidmweber/flyway-sbt)
 
 ### Sbt 1.x plugin for [Flyway](https://flywaydb.org)
 
