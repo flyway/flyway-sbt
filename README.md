@@ -16,13 +16,3 @@ Build and test the plugin using
 sbt scripted
 ```
 
-- [x] Merge the test (flyway-sbt-largetest) into flyway-sbt repo
-- [x] Use sbt for build instead of Maven
-- [x] Decide on version. The plugin does not need to be the same version as Flyway itself. 
-- [x] Use sbt to test its own plugin instead of using sbt-loader.jar
-- [ ] CI integration (travis)
-- [x] Migrate current code to sbt 1.0 plugin
-- [ ] Cross build a 0.13.x version. Current efforts fail because there is no scripted-plugin for 2.10.
-- [ ] Stop the plugin from *insisting* on a compilation prior to migration
-
-
