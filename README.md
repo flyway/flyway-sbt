@@ -16,3 +16,12 @@ Build and test the plugin using
 sbt scripted
 ```
 
+Deployment is via Flyway's website (https://github.com/flyway/flywaydb.org). Clone this or a fork in the 
+same folder as this project. Build as follows:
+
+```bash
+sbt publishLocal
+./local-deploy.sh
+```
+
+This will copy the artefacts to the right place in the flywaydb.org repo. Commit flywaydb.org and make a pull request.
