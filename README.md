@@ -25,3 +25,12 @@ sbt publishLocal
 ```
 
 This will copy the artefacts to the right place in the flywaydb.org repo. Commit flywaydb.org and make a pull request.
+
+Early adopters can access the plugin by adding the following to your `project/plugin.sbt` file:
+
+```scala
+resolvers += "Flyway" at "https://davidmweber.github.io/flyway-sbt.repo"
+
+addSbtPlugin("org.flywaydb" % "flyway-sbt" % "4.2.0")
+```
+
