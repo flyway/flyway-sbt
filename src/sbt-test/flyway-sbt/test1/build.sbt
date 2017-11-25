@@ -1,5 +1,5 @@
 organization := "org.flywaydb"
-
+enablePlugins(FlywayPlugin)
 name := "flyway-sbt-test1"
 
 libraryDependencies ++= Seq(

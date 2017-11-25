@@ -10,6 +10,9 @@ The build procedure now uses `sbt` instead of `maven` and integrates testing int
 (hint: we need more of those). Unfortunately, there is no scripted test framework for sbt 0.13.x which makes cross 
 building the plugin tricky. For now, we will rely on the [legacy plugin](https://github.com/flyway/flyway/tree/master/flyway-sbt).
 
+Note that from v4.2.1 onwards, the plugin has to be explicitly enabled using `enablePlugins(FlywayPlugin)`. This prevents
+Flyway actions triggering unrelated build activity and addresses [this issue](https://github.com/flyway/flyway/issues/1329).
+
 Build and test the plugin using
 
 ```bash
@@ -36,6 +39,6 @@ The plugin can also be obtained by adding the following to your `project/plugin.
 ```scala
 resolvers += "Flyway" at "https://davidmweber.github.io/flyway-sbt.repo"
 
-addSbtPlugin("org.flywaydb" % "flyway-sbt" % "4.2.0")
+addSbtPlugin("org.flywaydb" % "flyway-sbt" % "4.2.1-SNAPSHOT")
 ```
 
