@@ -27,7 +27,7 @@ import scala.collection.JavaConverters._
 
 object FlywayPlugin extends AutoPlugin {
 
-  override def trigger = allRequirements
+  override def trigger = noTrigger
 
   object autoImport {
 
