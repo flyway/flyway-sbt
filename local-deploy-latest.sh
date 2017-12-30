@@ -4,7 +4,7 @@
 pluginV=$(grep "pluginVersion =" build.sbt | sed 's/.*"\(.*\)"/\1/')
 scalaV=$(grep "scalaVersion :=" build.sbt | sed 's/.*"\(.*\..*\)\..*",/\1/')
 sbtV=$(grep "sbt.version" project/build.properties | sed 's/.*=\(.*\..*\)\..*/\1/')
-flywaydbPath="../flyway-sbt.repo/repo/org/flywaydb"
+flywaydbPath="../flyway-sbt.repo/org/flywaydb"
 root=${flywaydbPath}/flyway-sbt_${scalaV}_${sbtV}/${pluginV}
 ivyRoot=~/.ivy2/local/org.flywaydb/flyway-sbt/scala_${scalaV}/sbt_${sbtV}/${pluginV}
 

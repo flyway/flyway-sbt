@@ -1,5 +1,5 @@
-val flywayVersion = "4.2.0"
-val pluginVersion = "4.2.1-SNAPSHOT"
+val flywayVersion = "5.0.3" // Remember to update this in sbt-test/flyway-sbt/test{1|2}/build.sbt
+val pluginVersion = "5.0.0-SNAPSHOT"
 
 lazy val root = (project in file ("."))
     .settings(
