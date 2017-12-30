@@ -18,7 +18,7 @@ package org.flywaydb.sbt
 import java.util.Properties
 
 import org.flywaydb.core.Flyway
-import org.flywaydb.core.internal.util.logging.{LogCreator, LogFactory, Log}
+import org.flywaydb.core.api.logging.{LogCreator, LogFactory, Log}
 import org.flywaydb.core.internal.info.MigrationInfoDumper
 import sbt.Keys._
 import sbt._
@@ -104,10 +104,10 @@ object FlywayPlugin extends AutoPlugin {
   private case class ConfigMigrationLoading(locations: Seq[String], resolvers: Seq[String], skipDefaultResolvers: Boolean, encoding: String,
                                             cleanOnValidationError: Boolean, cleanDisabled: Boolean, target: String, outOfOrder: Boolean,
                                             callbacks: Seq[String], skipDefaultCallbacks: Boolean)
-  private case class ConfigSqlMigration(sqlMigrationPrefix: String, repeatableSqlMigrationPrefix: String, sqlMigrationSeparator: String, sqlMigrationSuffix: String)
-  private case class ConfigMigrate(ignoreMissingMigrations: Boolean, ignoreFutureMigrations: Boolean, ignoreFailedFutureMigration: Boolean,
+  private case class ConfigSqlMigration(sqlMigrationPrefix: String, repeatableSqlMigrationPrefix: String, sqlMigrationSeparator: String, sqlMigrationSuffixes: String*)
+  private case class ConfigMigrate(ignoreMissingMigrations: Boolean, ignoreFutureMigrations: Boolean, ignoreFailedMigrations: Boolean,
                                    baselineOnMigrate: Boolean, validateOnMigrate: Boolean,
-                                   allowMixedMigrations: Boolean, mixed: Boolean, group: Boolean, installedBy: String
+                                   mixedMigrations: Boolean, mixed: Boolean, group: Boolean, installedBy: String
                                   )
   private case class ConfigPlaceholder(placeholderReplacement: Boolean, placeholders: Map[String, String],
                                    placeholderPrefix: String, placeholderSuffix: String)
@@ -148,7 +148,7 @@ object FlywayPlugin extends AutoPlugin {
       flywayRepeatableSqlMigrationPrefix := defaults.getRepeatableSqlMigrationPrefix,
       flywaySqlMigrationSeparator := defaults.getSqlMigrationSeparator,
       flywaySqlMigrationSuffix := defaults.getSqlMigrationSuffix,
-      flywayTarget := defaults.getTarget.getVersion,
+      flywayTarget := "current",
       flywayOutOfOrder := defaults.isOutOfOrder,
       flywayCallbacks := new Array[String](0),
       flywaySkipDefaultCallbacks := defaults.isSkipDefaultCallbacks,
@@ -161,7 +161,7 @@ object FlywayPlugin extends AutoPlugin {
       flywayPlaceholderSuffix := defaults.getPlaceholderSuffix,
       flywayBaselineOnMigrate := defaults.isBaselineOnMigrate,
       flywayValidateOnMigrate := defaults.isValidateOnMigrate,
-      flywayAllowMixedMigrations := defaults.isAllowMixedMigrations,
+      flywayAllowMixedMigrations := defaults.isMixed,
       flywayMixed := defaults.isMixed,
       flywayGroup := defaults.isGroup,
       flywayInstalledBy := "",
@@ -262,19 +262,19 @@ object FlywayPlugin extends AutoPlugin {
       flyway.setSqlMigrationPrefix(config.sqlMigrationPrefix)
       flyway.setRepeatableSqlMigrationPrefix(config.repeatableSqlMigrationPrefix)
       flyway.setSqlMigrationSeparator(config.sqlMigrationSeparator)
-      flyway.setSqlMigrationSuffix(config.sqlMigrationSuffix)
+      flyway.setSqlMigrationSuffixes(config.sqlMigrationSuffixes: _*)
       flyway
     }
     def configure(config: ConfigMigrate): Flyway = {
       flyway.setIgnoreMissingMigrations(config.ignoreMissingMigrations)
       flyway.setIgnoreFutureMigrations(config.ignoreFutureMigrations)
-      if (config.ignoreFailedFutureMigration) {
-        flyway.setIgnoreFailedFutureMigration(config.ignoreFailedFutureMigration)
+      if (config.ignoreFailedMigrations) {
+        flyway.setIgnoreFutureMigrations(config.ignoreFailedMigrations)
       }
       flyway.setBaselineOnMigrate(config.baselineOnMigrate)
       flyway.setValidateOnMigrate(config.validateOnMigrate)
-      if (config.allowMixedMigrations) {
-        flyway.setAllowMixedMigrations(config.allowMixedMigrations)
+      if (config.mixedMigrations) {
+        flyway.setMixed(config.mixedMigrations)
       }
       flyway.setMixed(config.mixed)
       flyway.setGroup(config.group)

@@ -5,7 +5,7 @@ name := "flyway-sbt-test1"
 libraryDependencies ++= Seq(
   "org.springframework" % "spring-jdbc" % "3.0.5.RELEASE",
   "org.hsqldb" % "hsqldb" % "2.2.8",
-  "org.flywaydb" % "flyway-core" % "4.2.0"
+  "org.flywaydb" % "flyway-core" % "5.0.3"
 )
 
 flywayUrl := "jdbc:hsqldb:file:target/flyway_sample;shutdown=true"
