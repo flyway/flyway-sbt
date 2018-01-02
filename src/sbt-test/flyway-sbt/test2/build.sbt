@@ -3,7 +3,6 @@ enablePlugins(FlywayPlugin)
 name := "flyway-sbt-test1"
 
 libraryDependencies ++= Seq(
-  "org.springframework" % "spring-jdbc" % "3.0.5.RELEASE",
   "org.hsqldb" % "hsqldb" % "2.2.8",
   "org.flywaydb" % "flyway-core" % "5.0.3"
 )
