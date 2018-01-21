@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.flywaydb.sbt
+package io.github.davidmweber
 
 import java.util.Properties
 
@@ -129,7 +129,7 @@ object FlywayPlugin extends AutoPlugin {
   override def projectSettings :Seq[Setting[_]] = flywayBaseSettings(Runtime) ++ inConfig(Test)(flywayBaseSettings(Test))
 
   def flywayBaseSettings(conf: Configuration) :Seq[Setting[_]] = {
-    import org.flywaydb.sbt.FlywayPlugin.autoImport._
+    import FlywayPlugin.autoImport._
     val defaults = new Flyway()
     Seq[Setting[_]](
       flywayDriver := "",
