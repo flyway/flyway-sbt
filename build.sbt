@@ -11,6 +11,11 @@ lazy val root = (project in file ("."))
       libraryDependencies ++= Seq(
         "org.flywaydb" % "flyway-core" % flywayVersion
       ),
+      scalacOptions ++= Seq(
+        "-deprecation",
+        "-unchecked",
+        "-Xfuture"
+      ),
       scriptedLaunchOpts := { scriptedLaunchOpts.value ++
         Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
       },
