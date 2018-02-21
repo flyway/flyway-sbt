@@ -18,7 +18,7 @@ package io.github.davidmweber
 import java.util.Properties
 
 import org.flywaydb.core.Flyway
-import org.flywaydb.core.api.logging.{LogCreator, LogFactory, Log}
+import org.flywaydb.core.api.logging.{Log, LogCreator, LogFactory}
 import org.flywaydb.core.internal.info.MigrationInfoDumper
 import sbt.Keys._
 import sbt._
