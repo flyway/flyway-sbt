@@ -5,7 +5,6 @@ lazy val root = (project in file ("."))
     .settings(
       sbtPlugin := true,
       name := "flyway-sbt",
-      scalaVersion := "2.12.3",
       organization := "org.flywaydb",
       version := pluginVersion,
       libraryDependencies ++= Seq(
