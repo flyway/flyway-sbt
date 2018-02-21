@@ -1,13 +1,43 @@
 
 [![Travis](https://img.shields.io/travis/flyway/flyway-sbt.svg)](https://travis-ci.org/flyway/flyway-sbt)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.davidmweber/flyway-sbt.svg)](https://search.maven.org/#search%7Cga%7C1%7Cg%3A%22io.github.davidmweber%22%20AND%20a%3A%22flyway-sbt%22)
 
-### Sbt 1.x plugin for [Flyway](https://flywaydb.org)
+## Sbt 1.x plugin for [Flyway](https://flywaydb.org)
 
 Welcome to the home for the `sbt` v1.x plugin for flyway. The [user manual](https://davidmweber.github.io/flyway-sbt-docs/)
 will tell you how to get started. This project is based on the original 
 [flyway-sbt](https://github.com/flyway/flyway/tree/master/flyway-sbt) that was in the flyway repository through 
 version 4.2.1.
 
+### Getting started
+Adding Flyway to your build is very easy. First, update to your `project/plugin.sbt` file to include:
+```sbtshell
+ addSbtPlugin("org.flywaydb" % "flyway-sbt" % "5.0.0-RC1")
+```
+
+Edit `build.sbt` to enable the plugin and configure the database access:
+```sbtshell
+enablePlugins(FlywayPlugin)
+name := "plugtest"
+version := "0.0.1"
+name := "flyway-sbt-test1"
+
+libraryDependencies ++= Seq(
+  "org.hsqldb" % "hsqldb" % "2.2.8",
+  "org.flywaydb" % "flyway-core" % "5.0.7"
+)
+
+flywayUrl := "jdbc:hsqldb:file:target/flyway_sample;shutdown=true"
+flywayUser := "SA"
+flywayLocations += "db/migration"
+flywayUrl in Test := "jdbc:hsqldb:file:target/flyway_sample;shutdown=true"
+flywayUser in Test := "SA"
+
+```
+
+Migrate your database using `sbt flywayMigrate` or clean it using `sbt flywayClean`.
+
+### Building and testing
 Build and testing uses `sbt` and it's plugin [testing framework](http://www.scala-sbt.org/1.x/docs/Testing-sbt-plugins.html). 
 The test cases are pretty basic (hint: we need more of those). There is no support for `sbt` prior to 1.0. Use the 
 [legacy plugin](https://github.com/flyway/flyway/tree/master/flyway-sbt) instead.
@@ -27,18 +57,3 @@ git clone https://github.com/flyway/flyway-sbt.git
 cd flyway-sbt
 sbt publishLocal
 ```
-
-Deployment is via Flyway's website (https://github.com/flyway/flywaydb.org). Build as above for early adopters and then:
-
-```bash
-./local-deploy.sh
-```
-
-This will copy the artefacts to the right place in the flywaydb.org repo. Commit flywaydb.org and make a pull request.
-
-The plugin can also be obtained by adding the following to your `project/plugin.sbt` file:
-
-```scala
-addSbtPlugin("org.flywaydb" % "flyway-sbt" % "5.0.0-RC1")
-```
-
