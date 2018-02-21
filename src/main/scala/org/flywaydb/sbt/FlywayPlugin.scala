@@ -196,7 +196,7 @@ object FlywayPlugin extends AutoPlugin {
   /**
    * registers sbt log as a static logger for Flyway
    */
-  private def registerAsFlywayLogger(streams: TaskStreams) {
+  private def registerAsFlywayLogger(streams: TaskStreams): Unit = {
     LogFactory.setLogCreator(SbtLogCreator)
     FlywaySbtLog.streams = Some(streams)
   }
@@ -303,11 +303,11 @@ object FlywayPlugin extends AutoPlugin {
 
   private object FlywaySbtLog extends Log {
     var streams: Option[TaskStreams] = None
-    def debug(message: String) { streams foreach (_.log.debug(message)) }
-    def info(message: String) { streams foreach (_.log.info(message)) }
-    def warn(message: String) { streams foreach (_.log.warn(message)) }
-    def error(message: String) { streams foreach (_.log.error(message)) }
-    def error(message: String, e: Exception) { streams foreach (_.log.error(message)); streams foreach (_.log.trace(e)) }
+    def debug(message: String): Unit = { streams foreach (_.log.debug(message)) }
+    def info(message: String): Unit = { streams foreach (_.log.info(message)) }
+    def warn(message: String): Unit = { streams foreach (_.log.warn(message)) }
+    def error(message: String): Unit = { streams foreach (_.log.error(message)) }
+    def error(message: String, e: Exception): Unit = { streams foreach (_.log.error(message)); streams foreach (_.log.trace(e)) }
   }
 }
 
