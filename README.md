@@ -12,7 +12,7 @@ version 4.2.1.
 ### Getting started
 Adding Flyway to your build is very easy. First, update to your `project/plugin.sbt` file to include:
 ```sbtshell
- addSbtPlugin("org.flywaydb" % "flyway-sbt" % "5.0.0-RC1")
+ addSbtPlugin("org.flywaydb" % "flyway-sbt" % "5.0.0-RC2")
 ```
 
 Edit `build.sbt` to enable the plugin and configure the database access:
@@ -36,6 +36,8 @@ flywayUser in Test := "SA"
 ```
 
 Migrate your database using `sbt flywayMigrate` or clean it using `sbt flywayClean`.
+
+Note that the `flywayTarget` setting has been disabled due to [this bug](https://github.com/flyway/flyway/issues/1919).
 
 ### Building and testing
 Build and testing uses `sbt` and it's plugin [testing framework](http://www.scala-sbt.org/1.x/docs/Testing-sbt-plugins.html). 

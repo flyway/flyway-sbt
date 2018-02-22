@@ -18,7 +18,7 @@ package io.github.davidmweber
 import java.util.Properties
 
 import org.flywaydb.core.Flyway
-import org.flywaydb.core.api.logging.{LogCreator, LogFactory, Log}
+import org.flywaydb.core.api.logging.{Log, LogCreator, LogFactory}
 import org.flywaydb.core.internal.info.MigrationInfoDumper
 import sbt.Keys._
 import sbt._
@@ -106,9 +106,7 @@ object FlywayPlugin extends AutoPlugin {
                                             callbacks: Seq[String], skipDefaultCallbacks: Boolean)
   private case class ConfigSqlMigration(sqlMigrationPrefix: String, repeatableSqlMigrationPrefix: String, sqlMigrationSeparator: String, sqlMigrationSuffixes: String*)
   private case class ConfigMigrate(ignoreMissingMigrations: Boolean, ignoreFutureMigrations: Boolean, ignoreFailedMigrations: Boolean,
-                                   baselineOnMigrate: Boolean, validateOnMigrate: Boolean,
-                                   mixedMigrations: Boolean, mixed: Boolean, group: Boolean, installedBy: String
-                                  )
+                                   baselineOnMigrate: Boolean, validateOnMigrate: Boolean, mixed: Boolean, group: Boolean, installedBy: String)
   private case class ConfigPlaceholder(placeholderReplacement: Boolean, placeholders: Map[String, String],
                                    placeholderPrefix: String, placeholderSuffix: String)
   private case class Config(dataSource: ConfigDataSource, base: ConfigBase, migrationLoading: ConfigMigrationLoading,
@@ -154,14 +152,13 @@ object FlywayPlugin extends AutoPlugin {
       flywaySkipDefaultCallbacks := defaults.isSkipDefaultCallbacks,
       flywayIgnoreMissingMigrations := defaults.isIgnoreMissingMigrations,
       flywayIgnoreFutureMigrations := defaults.isIgnoreFutureMigrations,
-      flywayIgnoreFailedFutureMigration := false,
+      flywayIgnoreFailedFutureMigration := defaults.isIgnoreFutureMigrations,
       flywayPlaceholderReplacement := defaults.isPlaceholderReplacement,
       flywayPlaceholders := defaults.getPlaceholders.asScala.toMap,
       flywayPlaceholderPrefix := defaults.getPlaceholderPrefix,
       flywayPlaceholderSuffix := defaults.getPlaceholderSuffix,
       flywayBaselineOnMigrate := defaults.isBaselineOnMigrate,
       flywayValidateOnMigrate := defaults.isValidateOnMigrate,
-      flywayAllowMixedMigrations := defaults.isMixed,
       flywayMixed := defaults.isMixed,
       flywayGroup := defaults.isGroup,
       flywayInstalledBy := "",
@@ -172,7 +169,7 @@ object FlywayPlugin extends AutoPlugin {
       flywayConfigMigrationLoading := ConfigMigrationLoading(flywayLocations.value, flywayResolvers.value, flywaySkipDefaultResolvers.value, flywayEncoding.value, flywayCleanOnValidationError.value, flywayCleanDisabled.value, flywayTarget.value, flywayOutOfOrder.value, flywayCallbacks.value, flywaySkipDefaultCallbacks.value),
       flywayConfigSqlMigration := ConfigSqlMigration(flywaySqlMigrationPrefix.value, flywayRepeatableSqlMigrationPrefix.value, flywaySqlMigrationSeparator.value, flywaySqlMigrationSuffix.value),
       flywayConfigMigrate := ConfigMigrate(flywayIgnoreMissingMigrations.value, flywayIgnoreFutureMigrations.value, flywayIgnoreFailedFutureMigration.value,
-      flywayBaselineOnMigrate.value, flywayValidateOnMigrate.value, flywayAllowMixedMigrations.value, flywayMixed.value, flywayGroup.value, flywayInstalledBy.value),
+      flywayBaselineOnMigrate.value, flywayValidateOnMigrate.value, flywayMixed.value, flywayGroup.value, flywayInstalledBy.value),
       flywayConfigPlaceholder := ConfigPlaceholder(flywayPlaceholderReplacement.value, flywayPlaceholders.value, flywayPlaceholderPrefix.value, flywayPlaceholderSuffix.value),
       flywayConfig := Config(flywayConfigDataSource.value, flywayConfigBase.value, flywayConfigMigrationLoading.value, flywayConfigSqlMigration.value, flywayConfigMigrate.value, flywayConfigPlaceholder.value),
       flywayMigrate := withPrepared((fullClasspath in conf).value, streams.value){Flyway(flywayConfig.value).migrate()},
@@ -250,7 +247,7 @@ object FlywayPlugin extends AutoPlugin {
       flyway.setEncoding(config.encoding)
       flyway.setCleanOnValidationError(config.cleanOnValidationError)
       flyway.setCleanDisabled(config.cleanDisabled)
-      flyway.setTargetAsString(config.target)
+      //flyway.setTargetAsString(config.target)  // This is a bug in Flyway 5.0.7
       flyway.setOutOfOrder(config.outOfOrder)
       flyway.setCallbacksAsClassNames(config.callbacks: _*)
       flyway.setResolversAsClassNames(config.resolvers: _*)
@@ -273,9 +270,6 @@ object FlywayPlugin extends AutoPlugin {
       }
       flyway.setBaselineOnMigrate(config.baselineOnMigrate)
       flyway.setValidateOnMigrate(config.validateOnMigrate)
-      if (config.mixedMigrations) {
-        flyway.setMixed(config.mixedMigrations)
-      }
       flyway.setMixed(config.mixed)
       flyway.setGroup(config.group)
       flyway.setInstalledBy(config.installedBy)
