@@ -12,7 +12,7 @@ version 4.2.1.
 ### Getting started
 Adding Flyway to your build is very easy. First, update to your `project/plugin.sbt` file to include:
 ```sbtshell
- addSbtPlugin("org.flywaydb" % "flyway-sbt" % "5.0.0-RC2")
+ addSbtPlugin("io.github.davidmweber" % "flyway-sbt" % "5.0.0-RC2")
 ```
 
 Edit `build.sbt` to enable the plugin and configure the database access:
