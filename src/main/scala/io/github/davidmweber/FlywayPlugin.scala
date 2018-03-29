@@ -15,6 +15,7 @@
  */
 package io.github.davidmweber
 
+import java.net.URLClassLoader
 import java.util.Properties
 
 import org.flywaydb.core.Flyway
@@ -199,7 +200,7 @@ object FlywayPlugin extends AutoPlugin {
   }
 
   private def withContextClassLoader[T](cp: Types.Id[Keys.Classpath])(f: => T): T = {
-    val classloader = sbt.internal.inc.classpath.ClasspathUtilities.toLoader(cp.map(_.data), getClass.getClassLoader)
+    val classloader = toClasspathLoader(cp.map(_.data), getClass.getClassLoader)
     val thread = Thread.currentThread
     val oldLoader = thread.getContextClassLoader
     try {
@@ -209,6 +210,9 @@ object FlywayPlugin extends AutoPlugin {
       thread.setContextClassLoader(oldLoader)
     }
   }
+
+  def toClasspathLoader(paths: Seq[File], parent: ClassLoader): ClassLoader =
+    new URLClassLoader(paths.map(_.toURI.toURL).toArray, parent)
 
   private object Flyway {
     def apply(config: Config): Flyway = {
