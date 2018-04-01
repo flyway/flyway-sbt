@@ -6,7 +6,7 @@
 
 Welcome to the home for the `sbt` v1.x plugin for flyway. The [user manual](https://davidmweber.github.io/flyway-sbt-docs/)
 will tell you how to get started. This project is based on the original 
-[flyway-sbt](https://github.com/flyway/flyway/tree/master/flyway-sbt) that was in the flyway repository through 
+[flyway-sbt](https://github.com/flyway/flyway/tree/flyway-4.2.0/flyway-sbt) that was in the flyway repository through 
 version 4.2.1.
 
 ### Getting started
