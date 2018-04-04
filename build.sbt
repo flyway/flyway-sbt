@@ -15,6 +15,14 @@ lazy val root = (project in file ("."))
         "-unchecked",
         "-Xfuture"
       ),
+      scalacOptions in (Compile, doc) ++= {
+        Seq(
+          "-sourcepath",
+          (baseDirectory in LocalRootProject).value.getAbsolutePath,
+          "-doc-source-url",
+          s"""https://github.com/flyway/flyway-sbt/tree/${sys.process.Process("git rev-parse HEAD").lineStream_!.head}€{FILE_PATH}.scala"""
+        )
+      },
       scriptedLaunchOpts := { scriptedLaunchOpts.value ++
         Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
       },
