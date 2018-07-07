@@ -26,9 +26,11 @@ libraryDependencies += "org.hsqldb" % "hsqldb" % "2.2.8"
 
 flywayUrl := "jdbc:hsqldb:file:target/flyway_sample;shutdown=true"
 flywayUser := "SA"
+flywayPassword := ""
 flywayLocations += "db/migration"
 flywayUrl in Test := "jdbc:hsqldb:file:target/flyway_sample;shutdown=true"
 flywayUser in Test := "SA"
+flywayPassword in Test := ""
 
 ```
 
