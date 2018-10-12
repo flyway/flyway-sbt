@@ -89,6 +89,7 @@ object FlywayPlugin extends AutoPlugin {
     val flywayClean = taskKey[Unit]("Drops all database objects.")
     val flywayBaseline = taskKey[Unit]("Baselines an existing database, excluding all migrations up to and including baselineVersion.")
     val flywayRepair = taskKey[Unit]("Repairs the metadata table.")
+    val flywayDefaults = taskKey[FluentConfiguration]("Default configuration. This task is used to help resolve classpaths properly")
   }
 
   //*********************
@@ -129,7 +130,7 @@ object FlywayPlugin extends AutoPlugin {
 
   def flywayBaseSettings(conf: Configuration) :Seq[Setting[_]] = {
     import FlywayPlugin.autoImport._
-    val defaults = Flyway.configure()
+    val defaults = getFlywayDefaults
     Seq[Setting[_]](
       flywayDriver := "",
       flywayUrl := "",
@@ -173,17 +174,26 @@ object FlywayPlugin extends AutoPlugin {
       flywayBaselineOnMigrate.value, flywayValidateOnMigrate.value, flywayMixed.value, flywayGroup.value, flywayInstalledBy.value),
       flywayConfigPlaceholder := ConfigPlaceholder(flywayPlaceholderReplacement.value, flywayPlaceholders.value, flywayPlaceholderPrefix.value, flywayPlaceholderSuffix.value),
       flywayConfig := Config(flywayConfigDataSource.value, flywayConfigBase.value, flywayConfigMigrationLoading.value, flywayConfigSqlMigration.value, flywayConfigMigrate.value, flywayConfigPlaceholder.value),
-      flywayMigrate := withPrepared((fullClasspath in conf).value, streams.value){defaults.configure(flywayConfig.value).migrate()},
-      flywayValidate := withPrepared((fullClasspath in conf).value, streams.value){defaults.configure(flywayConfig.value).validate()},
-      flywayInfo := withPrepared((fullClasspath in conf).value, streams.value){
-        val info = defaults.configure(flywayConfig.value).info()
+      // Tasks
+      flywayDefaults := withPrepared((fullClasspath in conf).value, streams.value)(Flyway.configure()),
+      flywayMigrate := flywayDefaults.value.configure(flywayConfig.value).migrate(),
+      flywayValidate := flywayDefaults.value.configure(flywayConfig.value).validate(),
+      flywayInfo := Def.task {
+        val info = flywayDefaults.value.configure(flywayConfig.value).info()
         streams.value.log.info(MigrationInfoDumper.dumpToAsciiTable(info.all()))
         info
       },
-      flywayRepair := withPrepared((fullClasspath in conf).value, streams.value){defaults.configure(flywayConfig.value).repair()},
-      flywayClean := withPrepared((fullClasspath in conf).value, streams.value){defaults.configure(flywayConfig.value).clean()},
-      flywayBaseline := withPrepared((fullClasspath in conf).value, streams.value){defaults.configure(flywayConfig.value).baseline()}
+      flywayRepair := flywayDefaults.value.configure(flywayConfig.value).repair(),
+      flywayClean := flywayDefaults.value.configure(flywayConfig.value).clean(),
+      flywayBaseline := flywayDefaults.value.configure(flywayConfig.value).baseline()
     )
+  }
+
+  private def getFlywayDefaults: FluentConfiguration = {
+    // This needs to be set so that Flyway could initialize properly
+    // See https://github.com/flyway/flyway/issues/1922
+    LogFactory.setLogCreator(SbtLogCreator)
+    Flyway.configure()
   }
 
   private def withPrepared[T](cp: Types.Id[Keys.Classpath], streams: TaskStreams)(f: => T): T = {
@@ -242,7 +252,7 @@ object FlywayPlugin extends AutoPlugin {
       .encoding(config.encoding)
       .cleanOnValidationError(config.cleanOnValidationError)
       .cleanDisabled(config.cleanDisabled)
-      .target(config.target)
+      //.target(config.target) Setting this as-is will make the default be "current", which we don't want
       .outOfOrder(config.outOfOrder)
       .callbacks(config.callbacks: _*)
       .resolvers(config.resolvers: _*)
