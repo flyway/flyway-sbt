@@ -22,8 +22,9 @@ import org.flywaydb.core.api.logging.{Log, LogCreator, LogFactory}
 import org.flywaydb.core.internal.info.MigrationInfoDumper
 import sbt.Keys._
 import sbt._
-
 import scala.collection.JavaConverters._
+
+import org.flywaydb.core.api.configuration.FluentConfiguration
 
 object FlywayPlugin extends AutoPlugin {
 
@@ -54,7 +55,7 @@ object FlywayPlugin extends AutoPlugin {
     val flywaySqlMigrationPrefix = settingKey[String]("The file name prefix for Sql migrations (default: V)")
     val flywayRepeatableSqlMigrationPrefix = settingKey[String]("The file name prefix for repeatable sql migrations (default: R)")
     val flywaySqlMigrationSeparator = settingKey[String]("The file name separator for Sql migrations (default: __)")
-    val flywaySqlMigrationSuffix = settingKey[String]("The file name suffix for Sql migrations (default: .sql)")
+    val flywaySqlMigrationSuffixes = settingKey[Seq[String]]("The file name suffixes for Sql migrations (default: .sql)")
     val flywayCleanOnValidationError = settingKey[Boolean]("Whether to automatically call clean or not when a validation error occurs. (default: {@code false})<br/> This is exclusively intended as a convenience for development. Even tough we strongly recommend not to change migration scripts once they have been checked into SCM and run, this provides a way of dealing with this case in a smooth manner. The database will be wiped clean automatically, ensuring that the next migration will bring you back to the state checked into SCM. Warning ! Do not enable in production !")
     val flywayCleanDisabled = settingKey[Boolean]("Whether to disable clean. This is especially useful for production environments where running clean can be quite a career limiting move. (default: false)")
     val flywayTarget = settingKey[String]("The target version up to which Flyway should run migrations. Migrations with a higher version number will not be  applied. (default: the latest version)")
@@ -88,6 +89,7 @@ object FlywayPlugin extends AutoPlugin {
     val flywayClean = taskKey[Unit]("Drops all database objects.")
     val flywayBaseline = taskKey[Unit]("Baselines an existing database, excluding all migrations up to and including baselineVersion.")
     val flywayRepair = taskKey[Unit]("Repairs the metadata table.")
+    val flywayDefaults = taskKey[FluentConfiguration]("Default configuration. This task is used to help resolve classpaths properly")
   }
 
   //*********************
@@ -128,24 +130,24 @@ object FlywayPlugin extends AutoPlugin {
 
   def flywayBaseSettings(conf: Configuration) :Seq[Setting[_]] = {
     import FlywayPlugin.autoImport._
-    val defaults = new Flyway()
+    val defaults = getFlywayDefaults
     Seq[Setting[_]](
       flywayDriver := "",
       flywayUrl := "",
       flywayUser := "",
       flywayPassword := "",
-      flywayLocations := List("filesystem:src/main/resources/db/migration"),
+      flywayLocations := List("db/migration"),
       flywayResolvers := Array.empty[String],
       flywaySkipDefaultResolvers := defaults.isSkipDefaultResolvers,
       flywaySchemas := defaults.getSchemas.toSeq,
       flywayTable := defaults.getTable,
       flywayBaselineVersion := defaults.getBaselineVersion.getVersion,
       flywayBaselineDescription := defaults.getBaselineDescription,
-      flywayEncoding := defaults.getEncoding,
+      flywayEncoding := defaults.getEncoding.toString,
       flywaySqlMigrationPrefix := defaults.getSqlMigrationPrefix,
       flywayRepeatableSqlMigrationPrefix := defaults.getRepeatableSqlMigrationPrefix,
       flywaySqlMigrationSeparator := defaults.getSqlMigrationSeparator,
-      flywaySqlMigrationSuffix := defaults.getSqlMigrationSuffix,
+      flywaySqlMigrationSuffixes := defaults.getSqlMigrationSuffixes,
       flywayTarget := "current",
       flywayOutOfOrder := defaults.isOutOfOrder,
       flywayCallbacks := new Array[String](0),
@@ -167,22 +169,31 @@ object FlywayPlugin extends AutoPlugin {
       flywayConfigDataSource := ConfigDataSource(flywayDriver.value, flywayUrl.value, flywayUser.value, flywayPassword.value),
       flywayConfigBase := ConfigBase(flywaySchemas.value, flywayTable.value, flywayBaselineVersion.value, flywayBaselineDescription.value),
       flywayConfigMigrationLoading := ConfigMigrationLoading(flywayLocations.value, flywayResolvers.value, flywaySkipDefaultResolvers.value, flywayEncoding.value, flywayCleanOnValidationError.value, flywayCleanDisabled.value, flywayTarget.value, flywayOutOfOrder.value, flywayCallbacks.value, flywaySkipDefaultCallbacks.value),
-      flywayConfigSqlMigration := ConfigSqlMigration(flywaySqlMigrationPrefix.value, flywayRepeatableSqlMigrationPrefix.value, flywaySqlMigrationSeparator.value, flywaySqlMigrationSuffix.value),
+      flywayConfigSqlMigration := ConfigSqlMigration(flywaySqlMigrationPrefix.value, flywayRepeatableSqlMigrationPrefix.value, flywaySqlMigrationSeparator.value, flywaySqlMigrationSuffixes.value:_*),
       flywayConfigMigrate := ConfigMigrate(flywayIgnoreMissingMigrations.value, flywayIgnoreFutureMigrations.value, flywayIgnoreFailedFutureMigration.value,
       flywayBaselineOnMigrate.value, flywayValidateOnMigrate.value, flywayMixed.value, flywayGroup.value, flywayInstalledBy.value),
       flywayConfigPlaceholder := ConfigPlaceholder(flywayPlaceholderReplacement.value, flywayPlaceholders.value, flywayPlaceholderPrefix.value, flywayPlaceholderSuffix.value),
       flywayConfig := Config(flywayConfigDataSource.value, flywayConfigBase.value, flywayConfigMigrationLoading.value, flywayConfigSqlMigration.value, flywayConfigMigrate.value, flywayConfigPlaceholder.value),
-      flywayMigrate := withPrepared((fullClasspath in conf).value, streams.value){Flyway(flywayConfig.value).migrate()},
-      flywayValidate := withPrepared((fullClasspath in conf).value, streams.value){Flyway(flywayConfig.value).validate()},
-      flywayInfo := withPrepared((fullClasspath in conf).value, streams.value){
-        val info = Flyway(flywayConfig.value).info()
+      // Tasks
+      flywayDefaults := withPrepared((fullClasspath in conf).value, streams.value)(Flyway.configure()),
+      flywayMigrate := flywayDefaults.value.configure(flywayConfig.value).migrate(),
+      flywayValidate := flywayDefaults.value.configure(flywayConfig.value).validate(),
+      flywayInfo := Def.task {
+        val info = flywayDefaults.value.configure(flywayConfig.value).info()
         streams.value.log.info(MigrationInfoDumper.dumpToAsciiTable(info.all()))
         info
       },
-      flywayRepair := withPrepared((fullClasspath in conf).value, streams.value){Flyway(flywayConfig.value).repair()},
-      flywayClean := withPrepared((fullClasspath in conf).value, streams.value){Flyway(flywayConfig.value).clean()},
-      flywayBaseline := withPrepared((fullClasspath in conf).value, streams.value){Flyway(flywayConfig.value).baseline()}
+      flywayRepair := flywayDefaults.value.configure(flywayConfig.value).repair(),
+      flywayClean := flywayDefaults.value.configure(flywayConfig.value).clean(),
+      flywayBaseline := flywayDefaults.value.configure(flywayConfig.value).baseline()
     )
+  }
+
+  private def getFlywayDefaults: FluentConfiguration = {
+    // This needs to be set so that Flyway could initialize properly
+    // See https://github.com/flyway/flyway/issues/1922
+    LogFactory.setLogCreator(SbtLogCreator)
+    Flyway.configure()
   }
 
   private def withPrepared[T](cp: Types.Id[Keys.Classpath], streams: TaskStreams)(f: => T): T = {
@@ -210,14 +221,6 @@ object FlywayPlugin extends AutoPlugin {
     }
   }
 
-  private object Flyway {
-    def apply(config: Config): Flyway = {
-      val flyway = new Flyway()
-      flyway.configure(config)
-      flyway
-    }
-  }
-
   private implicit class StringOps(val s: String) extends AnyVal {
     def emptyToNull(): String = s match {
       case ss if ss.isEmpty => null
@@ -225,7 +228,7 @@ object FlywayPlugin extends AutoPlugin {
     }
   }
 
-  private implicit class FlywayOps(val flyway: Flyway) extends AnyVal {
+  private implicit class FluentConfigurationyOps(val flyway: FluentConfiguration) extends AnyVal {
     def configure(config: Config): Flyway = {
       flyway
       .configure(config.base)
@@ -234,60 +237,59 @@ object FlywayPlugin extends AutoPlugin {
       .configure(config.migrate)
       .configure(config.placeholder)
       .configureSysProps(config.dataSource)
+      .load()
     }
-    def configure(config: ConfigBase): Flyway = {
-      flyway.setSchemas(config.schemas: _*)
-      flyway.setTable(config.table)
-      flyway.setBaselineVersionAsString(config.baselineVersion)
-      flyway.setBaselineDescription(config.baselineDescription)
+    def configure(config: ConfigBase): FluentConfiguration = {
       flyway
+      .schemas(config.schemas: _*)
+      .table(config.table)
+      .baselineVersion(config.baselineVersion)
+      .baselineDescription(config.baselineDescription)
+
     }
-    def configure(config: ConfigMigrationLoading): Flyway = {
-      flyway.setLocations(config.locations: _*)
-      flyway.setEncoding(config.encoding)
-      flyway.setCleanOnValidationError(config.cleanOnValidationError)
-      flyway.setCleanDisabled(config.cleanDisabled)
-      //flyway.setTargetAsString(config.target)  // This is a bug in Flyway 5.0.7
-      flyway.setOutOfOrder(config.outOfOrder)
-      flyway.setCallbacksAsClassNames(config.callbacks: _*)
-      flyway.setResolversAsClassNames(config.resolvers: _*)
-      flyway.setSkipDefaultResolvers(config.skipDefaultResolvers)
-      flyway.setSkipDefaultCallbacks(config.skipDefaultCallbacks)
+    def configure(config: ConfigMigrationLoading): FluentConfiguration = {
+      flyway.locations(config.locations: _*)
+      .encoding(config.encoding)
+      .cleanOnValidationError(config.cleanOnValidationError)
+      .cleanDisabled(config.cleanDisabled)
+      //.target(config.target) Setting this as-is will make the default be "current", which we don't want
+      .outOfOrder(config.outOfOrder)
+      .callbacks(config.callbacks: _*)
+      .resolvers(config.resolvers: _*)
+      .skipDefaultResolvers(config.skipDefaultResolvers)
+      .skipDefaultCallbacks(config.skipDefaultCallbacks)
+    }
+    def configure(config: ConfigSqlMigration): FluentConfiguration = {
       flyway
+      .sqlMigrationPrefix(config.sqlMigrationPrefix)
+      .repeatableSqlMigrationPrefix(config.repeatableSqlMigrationPrefix)
+      .sqlMigrationSeparator(config.sqlMigrationSeparator)
+      .sqlMigrationSuffixes(config.sqlMigrationSuffixes: _*)
     }
-    def configure(config: ConfigSqlMigration): Flyway = {
-      flyway.setSqlMigrationPrefix(config.sqlMigrationPrefix)
-      flyway.setRepeatableSqlMigrationPrefix(config.repeatableSqlMigrationPrefix)
-      flyway.setSqlMigrationSeparator(config.sqlMigrationSeparator)
-      flyway.setSqlMigrationSuffixes(config.sqlMigrationSuffixes: _*)
+    def configure(config: ConfigMigrate): FluentConfiguration = {
+      val ignoreFutureMigrations = if(config.ignoreFailedMigrations) true else config.ignoreFutureMigrations
+
       flyway
+      .ignoreMissingMigrations(config.ignoreMissingMigrations)
+      .ignoreFutureMigrations(ignoreFutureMigrations)
+      .baselineOnMigrate(config.baselineOnMigrate)
+      .validateOnMigrate(config.validateOnMigrate)
+      .mixed(config.mixed)
+      .group(config.group)
+      .installedBy(config.installedBy)
     }
-    def configure(config: ConfigMigrate): Flyway = {
-      flyway.setIgnoreMissingMigrations(config.ignoreMissingMigrations)
-      flyway.setIgnoreFutureMigrations(config.ignoreFutureMigrations)
-      if (config.ignoreFailedMigrations) {
-        flyway.setIgnoreFutureMigrations(config.ignoreFailedMigrations)
-      }
-      flyway.setBaselineOnMigrate(config.baselineOnMigrate)
-      flyway.setValidateOnMigrate(config.validateOnMigrate)
-      flyway.setMixed(config.mixed)
-      flyway.setGroup(config.group)
-      flyway.setInstalledBy(config.installedBy)
+    def configure(config: ConfigPlaceholder): FluentConfiguration = {
       flyway
+      .placeholderReplacement(config.placeholderReplacement)
+      .placeholders(config.placeholders.asJava)
+      .placeholderPrefix(config.placeholderPrefix)
+      .placeholderSuffix(config.placeholderSuffix)
     }
-    def configure(config: ConfigPlaceholder): Flyway = {
-      flyway.setPlaceholderReplacement(config.placeholderReplacement)
-      flyway.setPlaceholders(config.placeholders.asJava)
-      flyway.setPlaceholderPrefix(config.placeholderPrefix)
-      flyway.setPlaceholderSuffix(config.placeholderSuffix)
-      flyway
-    }
-    def configureSysProps(config: ConfigDataSource): Flyway = {
+    def configureSysProps(config: ConfigDataSource): FluentConfiguration = {
       val props = new Properties()
       System.getProperties.asScala.filter(e => e._1.startsWith("flyway")).foreach(e => props.put(e._1, e._2))
       config.asProps.filter(e => !sys.props.contains(e._1)).foreach(e => props.put(e._1, e._2))
-      flyway.configure(props)
-      flyway
+      flyway.configuration(props)
     }
   }
 
@@ -297,6 +299,8 @@ object FlywayPlugin extends AutoPlugin {
 
   private object FlywaySbtLog extends Log {
     var streams: Option[TaskStreams] = None
+
+    def isDebugEnabled: Boolean = false
     def debug(message: String): Unit = { streams foreach (_.log.debug(message)) }
     def info(message: String): Unit = { streams foreach (_.log.info(message)) }
     def warn(message: String): Unit = { streams foreach (_.log.warn(message)) }
