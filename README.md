@@ -12,7 +12,7 @@ version 4.2.1.
 ### Getting started
 Adding Flyway to your build is very easy. First, update to your `project/plugin.sbt` file to include:
 ```sbtshell
- addSbtPlugin("io.github.davidmweber" % "flyway-sbt" % "5.0.0")
+ addSbtPlugin("io.github.davidmweber" % "flyway-sbt" % "5.2.0")
 ```
 
 Edit `build.sbt` to enable the plugin and configure the database access:
@@ -22,7 +22,7 @@ name := "plugtest"
 version := "0.0.1"
 name := "flyway-sbt-test1"
 
-libraryDependencies += "org.hsqldb" % "hsqldb" % "2.2.8"
+libraryDependencies += "org.hsqldb" % "hsqldb" % "2.4.0"
 
 flywayUrl := "jdbc:hsqldb:file:target/flyway_sample;shutdown=true"
 flywayUser := "SA"
