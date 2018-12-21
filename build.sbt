@@ -1,4 +1,4 @@
-val flywayVersion = "5.2.0"
+val flywayVersion = "5.2.4"
 val pluginVersion = "5.2.0"
 
 lazy val root = (project in file ("."))
