@@ -18,7 +18,6 @@ Adding Flyway to your build is very easy. First, update to your `project/plugin.
 Edit `build.sbt` to enable the plugin and configure the database access:
 ```sbtshell
 enablePlugins(FlywayPlugin)
-name := "plugtest"
 version := "0.0.1"
 name := "flyway-sbt-test1"
 
