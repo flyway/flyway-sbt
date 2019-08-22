@@ -1,0 +1,4 @@
+> flywayClean
+> flywayMigrate
+> test:flywayClean
+> test:flywayMigrate

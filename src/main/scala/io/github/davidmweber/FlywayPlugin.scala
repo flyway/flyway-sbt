@@ -48,7 +48,7 @@ object FlywayPlugin extends AutoPlugin {
     //*********************
     // common settings for migration loading tasks (used by migrate, validate, info)
     //*********************
-    val flywayLocations = settingKey[Seq[String]]("Locations on the classpath to scan recursively for migrations. Locations may contain both sql and code-based migrations. (default: filesystem:src/main/resources/db/migration)")
+    val flywayLocations = settingKey[Seq[String]]("Locations on the classpath to scan recursively for migrations. Locations may contain both sql and code-based migrations. (default: classpath:db/migration)")
     val flywayResolvers = settingKey[Seq[String]](" The fully qualified class names of the custom MigrationResolvers to be used in addition to the built-in ones for resolving Migrations to apply.")
     val flywaySkipDefaultResolvers = settingKey[Boolean]("Whether default built-in resolvers should be skipped. (default: false)")
     val flywayEncoding = settingKey[String]("The encoding of Sql migrations. (default: UTF-8)")
@@ -122,6 +122,7 @@ object FlywayPlugin extends AutoPlugin {
   private lazy val flywayConfigMigrate = taskKey[ConfigMigrate]("The Flyway migrate configuration.")
   private lazy val flywayConfigPlaceholder = taskKey[ConfigPlaceholder]("The Flyway placeholder configuration.")
   private lazy val flywayConfig = taskKey[Config]("The Flyway configuration.")
+  private lazy val flywayClasspath = taskKey[Types.Id[Classpath]]("The classpath used by Flyway.")
 
   //*********************
   // flyway defaults
@@ -174,8 +175,17 @@ object FlywayPlugin extends AutoPlugin {
       flywayBaselineOnMigrate.value, flywayValidateOnMigrate.value, flywayMixed.value, flywayGroup.value, flywayInstalledBy.value),
       flywayConfigPlaceholder := ConfigPlaceholder(flywayPlaceholderReplacement.value, flywayPlaceholders.value, flywayPlaceholderPrefix.value, flywayPlaceholderSuffix.value),
       flywayConfig := Config(flywayConfigDataSource.value, flywayConfigBase.value, flywayConfigMigrationLoading.value, flywayConfigSqlMigration.value, flywayConfigMigrate.value, flywayConfigPlaceholder.value),
+      flywayClasspath := (Def.taskDyn {
+        // fullClasspath triggers the compile task, so use a dynamic task to only run it if we need to.
+        // https://github.com/flyway/flyway-sbt/issues/10
+        if (flywayLocations.value.forall(_.startsWith("filesystem:"))) {
+          externalDependencyClasspath in conf
+        } else {
+          fullClasspath in conf
+        }
+      }).value,
       // Tasks
-      flywayDefaults := withPrepared((fullClasspath in conf).value, streams.value)(Flyway.configure()),
+      flywayDefaults := withPrepared(flywayClasspath.value, streams.value)(Flyway.configure()),
       flywayMigrate := flywayDefaults.value.configure(flywayConfig.value).migrate(),
       flywayValidate := flywayDefaults.value.configure(flywayConfig.value).validate(),
       flywayInfo := Def.task {
