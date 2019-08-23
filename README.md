@@ -14,6 +14,8 @@ Adding Flyway to your build is very easy. First, update to your `project/plugin.
 ```sbtshell
  addSbtPlugin("io.github.davidmweber" % "flyway-sbt" % "6.0.0")
 ```
+Please check out [Maven Central](https://search.maven.org/search?q=g:io.github.davidmweber%20AND%20a:flyway-sbt&core=gav) 
+for versions of `flyway-sbt` for previous versions of Flyway.
 
 Edit `build.sbt` to enable the plugin and configure the database access:
 ```sbtshell
