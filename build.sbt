@@ -1,5 +1,5 @@
-val flywayVersion = "6.0.3"
-val pluginVersion = "6.0.3"
+val flywayVersion = "6.0.7"
+val pluginVersion = "6.0.7"
 
 lazy val root = (project in file ("."))
     .enablePlugins(SbtPlugin)
