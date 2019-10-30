@@ -188,10 +188,9 @@ object FlywayPlugin extends AutoPlugin {
       flywayDefaults := withPrepared(flywayClasspath.value, streams.value)(Flyway.configure()),
       flywayMigrate := flywayDefaults.value.configure(flywayConfig.value).migrate(),
       flywayValidate := flywayDefaults.value.configure(flywayConfig.value).validate(),
-      flywayInfo := Def.task {
+      flywayInfo := {
         val info = flywayDefaults.value.configure(flywayConfig.value).info()
         streams.value.log.info(MigrationInfoDumper.dumpToAsciiTable(info.all()))
-        info
       },
       flywayRepair := flywayDefaults.value.configure(flywayConfig.value).repair(),
       flywayClean := flywayDefaults.value.configure(flywayConfig.value).clean(),
