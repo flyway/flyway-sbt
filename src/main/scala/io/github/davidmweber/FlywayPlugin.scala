@@ -18,12 +18,13 @@ package io.github.davidmweber
 import java.util.Properties
 
 import org.flywaydb.core.Flyway
+import org.flywaydb.core.api.callback.Callback
 import org.flywaydb.core.api.logging.{Log, LogCreator, LogFactory}
 import org.flywaydb.core.internal.info.MigrationInfoDumper
 import sbt.Keys._
 import sbt._
-import scala.collection.JavaConverters._
 
+import scala.collection.JavaConverters._
 import org.flywaydb.core.api.configuration.FluentConfiguration
 
 object FlywayPlugin extends AutoPlugin {
@@ -60,7 +61,7 @@ object FlywayPlugin extends AutoPlugin {
     val flywayCleanDisabled = settingKey[Boolean]("Whether to disable clean. This is especially useful for production environments where running clean can be quite a career limiting move. (default: false)")
     val flywayTarget = settingKey[String]("The target version up to which Flyway should run migrations. Migrations with a higher version number will not be  applied. (default: the latest version)")
     val flywayOutOfOrder = settingKey[Boolean]("Allows migrations to be run \"out of order\" (default: {@code false}). If you already have versions 1 and 3 applied, and now a version 2 is found, it will be applied too instead of being ignored.")
-    val flywayCallbacks = settingKey[Seq[String]]("A list of fully qualified FlywayCallback implementation classnames that will be used for Flyway lifecycle notifications. (default: Empty)")
+    val flywayCallbacks = settingKey[Seq[Callback]]("A list of callbacks that will be used for Flyway lifecycle notifications. (default: Empty)")
     val flywaySkipDefaultCallbacks = settingKey[Boolean]("Whether default built-in callbacks should be skipped. (default: false)")
 
     //*********************
@@ -105,7 +106,7 @@ object FlywayPlugin extends AutoPlugin {
   private case class ConfigBase(schemas: Seq[String], table: String, baselineVersion: String, baselineDescription: String)
   private case class ConfigMigrationLoading(locations: Seq[String], resolvers: Seq[String], skipDefaultResolvers: Boolean, encoding: String,
                                             cleanOnValidationError: Boolean, cleanDisabled: Boolean, target: String, outOfOrder: Boolean,
-                                            callbacks: Seq[String], skipDefaultCallbacks: Boolean)
+                                            callbacks: Seq[Callback], skipDefaultCallbacks: Boolean)
   private case class ConfigSqlMigration(sqlMigrationPrefix: String, repeatableSqlMigrationPrefix: String, sqlMigrationSeparator: String, sqlMigrationSuffixes: String*)
   private case class ConfigMigrate(ignoreMissingMigrations: Boolean, ignoreFutureMigrations: Boolean, ignoreFailedMigrations: Boolean,
                                    baselineOnMigrate: Boolean, validateOnMigrate: Boolean, mixed: Boolean, group: Boolean, installedBy: String)
@@ -151,7 +152,7 @@ object FlywayPlugin extends AutoPlugin {
       flywaySqlMigrationSuffixes := defaults.getSqlMigrationSuffixes,
       flywayTarget := "current",
       flywayOutOfOrder := defaults.isOutOfOrder,
-      flywayCallbacks := new Array[String](0),
+      flywayCallbacks := new Array[Callback](0),
       flywaySkipDefaultCallbacks := defaults.isSkipDefaultCallbacks,
       flywayIgnoreMissingMigrations := defaults.isIgnoreMissingMigrations,
       flywayIgnoreFutureMigrations := defaults.isIgnoreFutureMigrations,
