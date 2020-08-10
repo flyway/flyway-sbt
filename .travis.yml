@@ -1,6 +1,8 @@
 language: scala
 
-jdk: oraclejdk12
+jdk:
+   - openjdk8
+   - openjdk11
 
 # Need to add publish details
 script:
