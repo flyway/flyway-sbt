@@ -80,6 +80,8 @@ object FlywayPlugin extends AutoPlugin {
     val flywayMixed = settingKey[Boolean]("Whether to allow mixing transactional and non-transactional statements within the same migration. (default: false)")
     val flywayGroup = settingKey[Boolean]("Whether to group all pending migrations together in the same transaction when applying them (only recommended for databases with support for DDL transactions). (default: false)")
     val flywayInstalledBy = settingKey[String]("The username that will be recorded in the metadata table as having applied the migration. (default: null)")
+    val flywaySkipExecutingMigrations = settingKey[Boolean]("Whether Flyway should skip actually executing the contents of the migrations and only update the schema history table. (default: false)")
+    val flywayCherryPick = settingKey[Seq[String]]("A Comma separated list of migrations that Flyway should consider when migrating, undoing, or repairing. Leave blank to consider all discovered migrations. Each item in the list must either be a valid migration version (e.g 2.1) or a valid migration description (e.g. create_table). (default: Seq.Empty)")
 
     //*********************
     // flyway tasks
@@ -109,7 +111,8 @@ object FlywayPlugin extends AutoPlugin {
                                             callbacks: Seq[Callback], skipDefaultCallbacks: Boolean)
   private case class ConfigSqlMigration(sqlMigrationPrefix: String, repeatableSqlMigrationPrefix: String, sqlMigrationSeparator: String, sqlMigrationSuffixes: String*)
   private case class ConfigMigrate(ignoreMissingMigrations: Boolean, ignoreFutureMigrations: Boolean, ignoreFailedMigrations: Boolean,
-                                   baselineOnMigrate: Boolean, validateOnMigrate: Boolean, mixed: Boolean, group: Boolean, installedBy: String)
+                                   baselineOnMigrate: Boolean, validateOnMigrate: Boolean, mixed: Boolean, group: Boolean, installedBy: String, 
+                                   skipExecutingMigrations: Boolean, cherryPick: String*)
   private case class ConfigPlaceholder(placeholderReplacement: Boolean, placeholders: Map[String, String],
                                    placeholderPrefix: String, placeholderSuffix: String)
   private case class Config(dataSource: ConfigDataSource, base: ConfigBase, migrationLoading: ConfigMigrationLoading,
@@ -165,15 +168,17 @@ object FlywayPlugin extends AutoPlugin {
       flywayValidateOnMigrate := defaults.isValidateOnMigrate,
       flywayMixed := defaults.isMixed,
       flywayGroup := defaults.isGroup,
+      flywaySkipExecutingMigrations := defaults.isSkipExecutingMigrations,
+      flywayCherryPick := Seq.empty[String],
       flywayInstalledBy := "",
       flywayCleanOnValidationError := defaults.isCleanOnValidationError,
       flywayCleanDisabled := defaults.isCleanDisabled,
       flywayConfigDataSource := ConfigDataSource(flywayDriver.value, flywayUrl.value, flywayUser.value, flywayPassword.value),
       flywayConfigBase := ConfigBase(flywaySchemas.value, flywayTable.value, flywayBaselineVersion.value, flywayBaselineDescription.value),
       flywayConfigMigrationLoading := ConfigMigrationLoading(flywayLocations.value, flywayResolvers.value, flywaySkipDefaultResolvers.value, flywayEncoding.value, flywayCleanOnValidationError.value, flywayCleanDisabled.value, flywayTarget.value, flywayOutOfOrder.value, flywayCallbacks.value, flywaySkipDefaultCallbacks.value),
-      flywayConfigSqlMigration := ConfigSqlMigration(flywaySqlMigrationPrefix.value, flywayRepeatableSqlMigrationPrefix.value, flywaySqlMigrationSeparator.value, flywaySqlMigrationSuffixes.value:_*),
+      flywayConfigSqlMigration := ConfigSqlMigration(flywaySqlMigrationPrefix.value, flywayRepeatableSqlMigrationPrefix.value, flywaySqlMigrationSeparator.value, flywaySqlMigrationSuffixes.value: _*),
       flywayConfigMigrate := ConfigMigrate(flywayIgnoreMissingMigrations.value, flywayIgnoreFutureMigrations.value, flywayIgnoreFailedFutureMigration.value,
-      flywayBaselineOnMigrate.value, flywayValidateOnMigrate.value, flywayMixed.value, flywayGroup.value, flywayInstalledBy.value),
+      flywayBaselineOnMigrate.value, flywayValidateOnMigrate.value, flywayMixed.value, flywayGroup.value, flywayInstalledBy.value, flywaySkipExecutingMigrations.value, flywayCherryPick.value: _*),
       flywayConfigPlaceholder := ConfigPlaceholder(flywayPlaceholderReplacement.value, flywayPlaceholders.value, flywayPlaceholderPrefix.value, flywayPlaceholderSuffix.value),
       flywayConfig := Config(flywayConfigDataSource.value, flywayConfigBase.value, flywayConfigMigrationLoading.value, flywayConfigSqlMigration.value, flywayConfigMigrate.value, flywayConfigPlaceholder.value),
       flywayClasspath := (Def.taskDyn {
@@ -287,6 +292,8 @@ object FlywayPlugin extends AutoPlugin {
       .mixed(config.mixed)
       .group(config.group)
       .installedBy(config.installedBy)
+      .skipExecutingMigrations(config.skipExecutingMigrations)
+      .cherryPick(config.cherryPick: _*)
     }
     def configure(config: ConfigPlaceholder): FluentConfiguration = {
       flyway
