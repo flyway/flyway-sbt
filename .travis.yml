@@ -1,7 +1,0 @@
-language: scala
-
-jdk: oraclejdk12
-
-# Need to add publish details
-script:
-   - sbt scripted
