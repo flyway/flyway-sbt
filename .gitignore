@@ -1,5 +1,6 @@
 *~
 .idea/
+.bsp/
 *.iml
 target/
 project/target/
