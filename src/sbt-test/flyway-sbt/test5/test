@@ -1,0 +1,3 @@
+# Check that neither info nor migrate works if there are incorrectly named migrations 
+-> flywayInfo
+-> flywayMigrate
