@@ -37,9 +37,10 @@ libraryDependencies += "org.hsqldb" % "hsqldb" % "2.5.0"
 flywayUrl := "jdbc:hsqldb:file:target/flyway_sample;shutdown=true"
 flywayUser := "SA"
 flywayPassword := ""
-flywayLocations += "db/migration"
+flywayLocations := Seq("filesystem:src/main/resources/db/migration")
 flywayUrl in Test := "jdbc:hsqldb:file:target/flyway_sample;shutdown=true"
 flywayUser in Test := "SA"
+flywayLocations in Test := Seq("filesystem:src/main/resources/db/migration")
 flywayPassword in Test := ""
 
 ```
