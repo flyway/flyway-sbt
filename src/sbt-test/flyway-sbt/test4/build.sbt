@@ -9,3 +9,5 @@ libraryDependencies ++= Seq(
 flywayUrl := "jdbc:hsqldb:file:target/flyway_sample;shutdown=true"
 flywayUser := "SA"
 flywayCallbacks := Seq(Callback)
+flywayCleanDisabled := false
+Test / flywayCleanDisabled := false
