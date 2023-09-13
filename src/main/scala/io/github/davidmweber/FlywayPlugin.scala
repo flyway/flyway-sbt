@@ -297,7 +297,7 @@ object FlywayPlugin extends AutoPlugin {
     def configure(config: ConfigPlaceholder): FluentConfiguration = {
       flyway
       .placeholderReplacement(config.placeholderReplacement)
-      .placeholders(config.placeholders.asJava)
+      .placeholders(new java.util.HashMap(config.placeholders.asJava))
       .placeholderPrefix(config.placeholderPrefix)
       .placeholderSuffix(config.placeholderSuffix)
     }
