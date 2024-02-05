@@ -45,6 +45,11 @@ flywayPassword in Test := ""
 
 Migrate your database using `sbt flywayMigrate` or clean it using `sbt flywayClean`.
 
+To run flyway before any code generation, let compile depend on flywayMigrate
+```
+    (Compile / compile) := ((Compile / compile) dependsOn flywayMigrate).value,
+```
+
 Note that the `flywayTarget` setting has been disabled due to [this bug](https://github.com/flyway/flyway/issues/1919).
 
 ### Building and testing
