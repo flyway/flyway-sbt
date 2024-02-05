@@ -16,16 +16,17 @@
 package io.github.davidmweber
 
 import java.util.Properties
-
 import org.flywaydb.core.Flyway
 import org.flywaydb.core.api.callback.Callback
 import org.flywaydb.core.api.logging.{Log, LogCreator, LogFactory}
 import org.flywaydb.core.internal.info.MigrationInfoDumper
-import sbt.Keys._
-import sbt._
+import sbt.Keys.*
+import sbt.*
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.*
 import org.flywaydb.core.api.configuration.FluentConfiguration
+import org.flywaydb.core.api.pattern.ValidatePattern
+import org.flywaydb.core.internal.util.ValidatePatternUtils
 
 object FlywayPlugin extends AutoPlugin {
 
@@ -58,7 +59,7 @@ object FlywayPlugin extends AutoPlugin {
     val flywaySqlMigrationSeparator = settingKey[String]("The file name separator for Sql migrations (default: __)")
     val flywaySqlMigrationSuffixes = settingKey[Seq[String]]("The file name suffixes for Sql migrations (default: .sql)")
     val flywayCleanOnValidationError = settingKey[Boolean]("Whether to automatically call clean or not when a validation error occurs. (default: {@code false})<br/> This is exclusively intended as a convenience for development. Even tough we strongly recommend not to change migration scripts once they have been checked into SCM and run, this provides a way of dealing with this case in a smooth manner. The database will be wiped clean automatically, ensuring that the next migration will bring you back to the state checked into SCM. Warning ! Do not enable in production !")
-    val flywayCleanDisabled = settingKey[Boolean]("Whether to disable clean. This is especially useful for production environments where running clean can be quite a career limiting move. (default: false)")
+    val flywayCleanDisabled = settingKey[Boolean]("Whether to disable clean. This is especially useful for production environments where running clean can be quite a career limiting move. (default: true)")
     val flywayTarget = settingKey[String]("The target version up to which Flyway should run migrations. Migrations with a higher version number will not be  applied. (default: the latest version)")
     val flywayOutOfOrder = settingKey[Boolean]("Allows migrations to be run \"out of order\" (default: {@code false}). If you already have versions 1 and 3 applied, and now a version 2 is found, it will be applied too instead of being ignored.")
     val flywayCallbacks = settingKey[Seq[Callback]]("A list of callbacks that will be used for Flyway lifecycle notifications. (default: Empty)")
@@ -109,7 +110,14 @@ object FlywayPlugin extends AutoPlugin {
                                             callbacks: Seq[Callback], skipDefaultCallbacks: Boolean)
   private case class ConfigSqlMigration(sqlMigrationPrefix: String, repeatableSqlMigrationPrefix: String, sqlMigrationSeparator: String, sqlMigrationSuffixes: String*)
   private case class ConfigMigrate(ignoreMissingMigrations: Boolean, ignoreFutureMigrations: Boolean, ignoreFailedMigrations: Boolean,
-                                   baselineOnMigrate: Boolean, validateOnMigrate: Boolean, mixed: Boolean, group: Boolean, installedBy: String)
+                                   baselineOnMigrate: Boolean, validateOnMigrate: Boolean, mixed: Boolean, group: Boolean, installedBy: String) {
+    def ignorePatterns: Seq[ValidatePattern] = {
+      var patterns = Seq.empty[String]
+      if (ignoreMissingMigrations) patterns = patterns :+ "*:missing"
+      if (ignoreFailedMigrations || ignoreFutureMigrations) patterns = patterns :+ "*:future"
+      patterns.map(ValidatePattern.fromPattern)
+    }
+  }
   private case class ConfigPlaceholder(placeholderReplacement: Boolean, placeholders: Map[String, String],
                                    placeholderPrefix: String, placeholderSuffix: String)
   private case class Config(dataSource: ConfigDataSource, base: ConfigBase, migrationLoading: ConfigMigrationLoading,
@@ -154,9 +162,9 @@ object FlywayPlugin extends AutoPlugin {
       flywayOutOfOrder := defaults.isOutOfOrder,
       flywayCallbacks := new Array[Callback](0),
       flywaySkipDefaultCallbacks := defaults.isSkipDefaultCallbacks,
-      flywayIgnoreMissingMigrations := defaults.isIgnoreMissingMigrations,
-      flywayIgnoreFutureMigrations := defaults.isIgnoreFutureMigrations,
-      flywayIgnoreFailedFutureMigration := defaults.isIgnoreFutureMigrations,
+      flywayIgnoreMissingMigrations := ValidatePatternUtils.isMissingIgnored(defaults.getIgnoreMigrationPatterns),
+      flywayIgnoreFutureMigrations := ValidatePatternUtils.isFutureIgnored(defaults.getIgnoreMigrationPatterns),
+      flywayIgnoreFailedFutureMigration := ValidatePatternUtils.isFutureIgnored(defaults.getIgnoreMigrationPatterns),
       flywayPlaceholderReplacement := defaults.isPlaceholderReplacement,
       flywayPlaceholders := defaults.getPlaceholders.asScala.toMap,
       flywayPlaceholderPrefix := defaults.getPlaceholderPrefix,
@@ -277,11 +285,9 @@ object FlywayPlugin extends AutoPlugin {
       .sqlMigrationSuffixes(config.sqlMigrationSuffixes: _*)
     }
     def configure(config: ConfigMigrate): FluentConfiguration = {
-      val ignoreFutureMigrations = if(config.ignoreFailedMigrations) true else config.ignoreFutureMigrations
 
       flyway
-      .ignoreMissingMigrations(config.ignoreMissingMigrations)
-      .ignoreFutureMigrations(ignoreFutureMigrations)
+      .ignoreMigrationPatterns(config.ignorePatterns:_*)
       .baselineOnMigrate(config.baselineOnMigrate)
       .validateOnMigrate(config.validateOnMigrate)
       .mixed(config.mixed)
@@ -291,7 +297,7 @@ object FlywayPlugin extends AutoPlugin {
     def configure(config: ConfigPlaceholder): FluentConfiguration = {
       flyway
       .placeholderReplacement(config.placeholderReplacement)
-      .placeholders(config.placeholders.asJava)
+      .placeholders(new java.util.HashMap(config.placeholders.asJava))
       .placeholderPrefix(config.placeholderPrefix)
       .placeholderSuffix(config.placeholderSuffix)
     }
@@ -316,6 +322,8 @@ object FlywayPlugin extends AutoPlugin {
     def warn(message: String): Unit = { streams foreach (_.log.warn(message)) }
     def error(message: String): Unit = { streams foreach (_.log.error(message)) }
     def error(message: String, e: Exception): Unit = { streams foreach (_.log.error(message)); streams foreach (_.log.trace(e)) }
+
+    def notice(message: String): Unit = { streams foreach (_.log.info(message)) }
   }
 }
 
